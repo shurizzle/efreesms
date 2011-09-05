@@ -1,3 +1,15 @@
+#--
+# DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+# Version 2, December 2004
+#
+# Copyleft shura [shura1991@gmail.com]
+#
+# DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+# 0. You just DO WHAT THE FUCK YOU WANT TO.
+#++
+
 require 'RMagick'
 require 'tempfile'
 require 'nokogiri'
@@ -16,21 +28,19 @@ class EFreeSMS
     end
 
     def self.resolve (browser)
-      res = ''
-
-      Dir.mktmpdir {|d|
-        Dir.chdir(d) {|d|
-          download(browser, File.join(File.realpath(d), 'captcha.jpg'))
-          Magick::Image.read('captcha.jpg')[0].resize(130, 50).negate.despeckle.write('captcha.tif')
-          system('tesseract', 'captcha.tif', 'captcha', 2 => '/dev/null')
-          res = File.read('captcha.txt').strip
-          %w{captcha.jpg captcha.tif captcha.txt}.each {|f|
-            File.unlink(f)
+      ''.tap {|res|
+        Dir.mktmpdir {|d|
+          Dir.chdir(d) {|d|
+            download(browser, File.join(File.realpath(d), 'captcha.jpg'))
+            Magick::Image.read('captcha.jpg')[0].resize(130, 50).negate.despeckle.write('captcha.tif')
+            system('tesseract', 'captcha.tif', 'captcha', 2 => '/dev/null')
+            res.replace File.read('captcha.txt').strip
+            %w{captcha.jpg captcha.tif captcha.txt}.each {|f|
+              File.unlink(f)
+            }
           }
         }
       }
-
-      return res
     end
   end
 
@@ -69,8 +79,7 @@ class EFreeSMS
           'text'    => text,
           'vercode' => EFreeSMS::Captcha.resolve(browser),
           'submit'  => 'SEND SMS'
-        },
-        {
+        }, {
           'Referer'     => 'http://www.e-freesms.com/sms.php'
         }).body
 

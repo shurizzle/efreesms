@@ -1,3 +1,15 @@
+#--
+# DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+# Version 2, December 2004
+#
+# Copyleft shura [shura1991@gmail.com]
+#
+# DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+# TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+# 0. You just DO WHAT THE FUCK YOU WANT TO.
+#++
+
 require 'optparse'
 require 'singleton'
 require 'shellwords'
@@ -12,7 +24,7 @@ class EFreeSMS
       reset
       parse_opts
 
-      unless @editor and @country and @number
+      unless @user and @editor and @country and @number
         $stderr.puts "Please, set up the client"
         exit 1
       end
@@ -59,7 +71,7 @@ class EFreeSMS
 
     def edit
       editor = Shellwords.shellwords(@editor)
-      file = Tempfile.new(['sms', 'txt']).tap {|x| x.close }.path
+      file = Tempfile.new(['sms', '.txt']).tap {|x| x.close }.path
       Exec.system(*editor, file)
 
       File.read(file).tap {
