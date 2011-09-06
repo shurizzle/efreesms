@@ -12,7 +12,7 @@
 
 Gem::Specification.new {|g|
     g.name          = 'efreesms'
-    g.version       = '0.0.1.1'
+    g.version       = '0.0.1.2'
     g.author        = 'shura'
     g.email         = 'shura1991@gmail.com'
     g.homepage      = 'http://github.com/shurizzle/ruby-efreesms'
@@ -25,6 +25,6 @@ Gem::Specification.new {|g|
     g.has_rdoc      = true
 
     g.add_dependency('httpclient')
-    g.add_dependency('rmagick')
+    g.add_dependency('simple_tesseract')
     g.add_dependency('nokogiri')
 }

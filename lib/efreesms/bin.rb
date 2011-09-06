@@ -13,6 +13,7 @@
 require 'optparse'
 require 'singleton'
 require 'shellwords'
+require 'tempfile'
 
 require 'efreesms'
 

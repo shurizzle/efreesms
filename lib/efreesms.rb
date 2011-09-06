@@ -10,8 +10,7 @@
 # 0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
-require 'RMagick'
-require 'tempfile'
+require 'tesseract'
 require 'nokogiri'
 require 'httpclient'
 
@@ -19,28 +18,13 @@ require 'efreesms/version'
 
 class EFreeSMS
   class Captcha
-    def self.download (browser, dest)
-      File.open(dest, 'w') {|file|
-        browser.get('http://www.e-freesms.com/captcha.php', {}, {'Referer' => 'http://www.e-freesms.com/sms.php'}) {|data|
-          file.write(data)
-        }
-      }
+    def self.download (browser)
+      browser.get('http://www.e-freesms.com/captcha.php', {}, {'Referer' => 'http://www.e-freesms.com/sms.php'}).body.force_encoding('BINARY')
     end
 
     def self.resolve (browser)
-      ''.tap {|res|
-        Dir.mktmpdir {|d|
-          Dir.chdir(d) {|d|
-            download(browser, File.join(File.realpath(d), 'captcha.jpg'))
-            Magick::Image.read('captcha.jpg')[0].resize(130, 50).negate.despeckle.write('captcha.tif')
-            system('tesseract', 'captcha.tif', 'captcha', 2 => '/dev/null')
-            res.replace File.read('captcha.txt').strip
-            %w{captcha.jpg captcha.tif captcha.txt}.each {|f|
-              File.unlink(f)
-            }
-          }
-        }
-      }
+      Tesseract.new(blob: download(browser), strip: true,
+        editor: lambda {|x| x.resize(130, 50).quantize(256, Magick::GRAYColorspace).negate.despeckle }).to_s
     end
   end
 
@@ -67,13 +51,15 @@ class EFreeSMS
       def real_send (country, number, text)
         browser = HTTPClient.new(agent_name: EFreeSMS::USERAGENT)
 
-        countries = Hash[Nokogiri::HTML(browser.get('http://www.e-freesms.com/sms.php').body).xpath('//select[@name="country"]/option').select {|x| !x['value'].empty? }.map {|x| [x.text.gsub(/\s*\(.+?\)\s*/, '').downcase, x['value']] }]
+        dom = Nokogiri::HTML(browser.get('http://www.e-freesms.com/sms.php').body)
+        countries = Hash[dom.xpath('//select[@name="country"]/option').select {|x| !x['value'].empty? }.map {|x| [x.text.gsub(/\s*\(.+?\)\s*/, '').downcase, x['value']] }]
+        action = dom.xpath('//form[@name="frm_sms"]').first['action']
 
         country = country.to_s.downcase
         country = countries[country] if countries[country]
         raise "Country not valid" unless countries.values.include?(country)
 
-        body = browser.post('http://www.e-freesms.com/s4b8usba.php', {
+        body = browser.post("http://www.e-freesms.com/#{action}", {
           'country' => country,
           'phone'   => (country + number),
           'text'    => text,
@@ -84,6 +70,7 @@ class EFreeSMS
         }).body
 
         unless body =~ /Your SMS has been sent/i
+          p body
           $stderr.puts " ERROR, retrying."
           raise
         end
